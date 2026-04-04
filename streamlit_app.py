@@ -4,7 +4,11 @@ import os
 from datetime import date, timedelta
 
 import streamlit as st
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(*_args, **_kwargs):
+        return False
 
 from logic.config import APP_NAME, LOGO, GRID_CELLS, LAGOS_AREAS, TOPO_DATA
 from logic.streamlit_helpers import (
@@ -34,6 +38,17 @@ st.set_page_config(
 )
 
 load_dotenv()
+
+
+def _read_groq_key() -> str:
+    env_key = os.getenv("GROQ_API_KEY", "")
+    if env_key:
+        return env_key
+
+    try:
+        return str(st.secrets.get("GROQ_API_KEY", ""))
+    except Exception:
+        return ""
 
 ensure_session_state()
 inject_styles(st.session_state.dark)
@@ -257,9 +272,7 @@ if st.session_state.predictions is not None:
     }
     st.markdown(f"<h3 style='margin-top:4px;color:{colors['H_COLOR']};'> Ask FloodIQ AI</h3>", unsafe_allow_html=True)
 
-    groq_key = os.getenv("GROQ_API_KEY")
-    if not groq_key:
-        groq_key = st.secrets.get("GROQ_API_KEY", "")
+    groq_key = _read_groq_key()
     groq_ok = bool(groq_key)
 
     if not groq_ok:

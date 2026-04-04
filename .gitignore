@@ -1,2 +1,4 @@
 .streamlit/secrets.toml
 ./floodiq-venv/
+__pycache__/
+*.pyc
