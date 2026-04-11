@@ -13,6 +13,7 @@ def run_prediction(weather_df, topo, model, threshold=0.5):
     df = weather_df.copy()
     df["date"] = pd.to_datetime(df["date"])
 
+    
     # Terrain features
     df["elevation"] = topo["elevation"]
     df["slope"] = topo["slope"]
@@ -49,6 +50,8 @@ def run_prediction(weather_df, topo, model, threshold=0.5):
         if p >= 0.7: return "HIGH", "🔴"
         if p >= 0.4: return "MODERATE", "🟡"
         return "LOW", "🟢"
+
+    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%d %b %Y")      
 
     df[["risk_level", "risk_emoji"]] = df["flood_prob"].apply(
         lambda p: pd.Series(get_risk(p))
