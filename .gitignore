@@ -2,3 +2,4 @@
 ./floodiq-venv/
 __pycache__/
 *.pyc
+.tmp_*.py
