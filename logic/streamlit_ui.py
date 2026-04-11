@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import streamlit as st
 
@@ -82,6 +83,40 @@ def inject_styles(dark: bool):
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
+    :root {{
+        --floodiq-section-label-size: 0.7rem;
+        --floodiq-home-title-size: 1.25rem;
+        --floodiq-home-body-size: 0.95rem;
+        --floodiq-home-pill-size: 0.72rem;
+        --floodiq-home-how-title-size: 0.68rem;
+        --floodiq-home-how-body-size: 0.88rem;
+        --floodiq-home-card-label-size: 0.62rem;
+        --floodiq-home-card-value-size: 0.88rem;
+        --floodiq-home-card-note-size: 0.76rem;
+        --floodiq-home-header-title-size: 1.7rem;
+        --floodiq-home-header-subtitle-size: 0.72rem;
+        --floodiq-button-font-size: 1rem;
+        --floodiq-button-padding: 10px 22px;
+    }}
+
+    @media (min-width: 1200px) {{
+        :root {{
+            --floodiq-section-label-size: 0.8rem;
+            --floodiq-home-title-size: 1.5rem;
+            --floodiq-home-body-size: 1.05rem;
+            --floodiq-home-pill-size: 0.8rem;
+            --floodiq-home-how-title-size: 0.76rem;
+            --floodiq-home-how-body-size: 0.98rem;
+            --floodiq-home-card-label-size: 0.7rem;
+            --floodiq-home-card-value-size: 1rem;
+            --floodiq-home-card-note-size: 0.84rem;
+            --floodiq-home-header-title-size: 1.9rem;
+            --floodiq-home-header-subtitle-size: 0.8rem;
+            --floodiq-button-font-size: 1.05rem;
+            --floodiq-button-padding: 12px 26px;
+        }}
+    }}
+
   html, body, [class*="css"] {{
     font-family: 'Syne', sans-serif;
     background-color: {colors['BG']} !important;
@@ -94,6 +129,108 @@ def inject_styles(dark: bool):
   .main .block-container {{
     max-width: 980px !important;
     padding: 2rem 2rem 4rem 2rem !important;
+  }}
+
+    .floodiq-header {{
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        gap: 10px !important;
+        min-width: 0 !important;
+    }}
+
+    .floodiq-header-left {{
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 10px !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }}
+
+    .floodiq-header-left > div {{
+        min-width: 0 !important;
+    }}
+
+    .st-key-theme_toggle_btn {{
+        display: flex !important;
+        justify-content: flex-end !important;
+        margin-top: 2px !important;
+    }}
+
+    .st-key-theme_toggle_btn button {{
+        width: 34px !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        border-radius: 10px !important;
+        border: 1px solid {colors['BORDER']} !important;
+        background: {colors['SURFACE2']} !important;
+        padding: 0 !important;
+        font-size: 1rem !important;
+        line-height: 1 !important;
+    }}
+
+    .st-key-go_home_fab {{
+        position: fixed !important;
+        right: 16px !important;
+        bottom: 16px !important;
+        z-index: 999 !important;
+        margin: 0 !important;
+    }}
+
+    .st-key-go_home_fab button {{
+        width: 38px !important;
+        min-width: 38px !important;
+        height: 38px !important;
+        border-radius: 999px !important;
+        padding: 0 !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        color: #FFFFFF !important;
+        background: {colors['ACCENT']} !important;
+        border: 1.5px solid {colors['ACCENT']} !important;
+        box-shadow: 0 8px 22px {colors['ACCENT']}66 !important;
+    }}
+
+    .st-key-go_home_fab button p,
+    .st-key-go_home_fab button span {{
+        color: #FFFFFF !important;
+    }}
+  @media (max-width: 768px) {{
+        .main .block-container {{
+            padding: 1rem 0.9rem 2.5rem 0.9rem !important;
+        }}
+
+        .floodiq-header {{
+            gap: 8px !important;
+            flex-wrap: nowrap !important;
+        }}
+
+        .floodiq-header-left {{
+            gap: 8px !important;
+            min-width: 0 !important;
+        }}
+
+        .floodiq-header span[style*="font-size:1.7rem"] {{
+            font-size: 1.35rem !important;
+        }}
+
+        .floodiq-header span[style*="font-size:0.72rem"] {{
+            font-size: 0.64rem !important;
+        }}
+
+        .st-key-theme_toggle_btn button {{
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.95rem !important;
+        }}
+
+        .st-key-go_home_fab {{
+            right: 12px !important;
+            bottom: 12px !important;
+        }}
   }}
 
   .stApp {{ background-color: {colors['BG']} !important; }}
@@ -231,7 +368,8 @@ def inject_styles(dark: bool):
     background: {colors['ACCENT']} !important;
     color: #ffffff !important;
     border-radius: 10px !important;
-    padding: 10px 22px !important;
+        padding: var(--floodiq-button-padding) !important;
+        font-size: var(--floodiq-button-font-size) !important;
     border: none !important;
   }}
 
@@ -261,7 +399,7 @@ def divider():
 def section_label(text: str):
     colors = get_theme(st.session_state.dark)
     st.markdown(
-        f"<p style='font-family:\"DM Mono\",monospace;font-size:0.7rem;"
+        f"<p style='font-family:\"DM Mono\",monospace;font-size:var(--floodiq-section-label-size, 0.7rem);"
         f"font-weight:500;letter-spacing:0.14em;text-transform:uppercase;"
         f"color:{colors['TEXT3']};margin-bottom:8px;'>{text}</p>",
         unsafe_allow_html=True,
@@ -317,22 +455,21 @@ def auto_fetch_location():
     Returns lat, lon, location_name if successful, otherwise returns None, None, None.
     """
     colors = get_theme(st.session_state.dark)
-    
+
     st.markdown(
-        f"""
-    <p style='font-size:0.9rem;color:{colors["TEXT2"]};margin-bottom:12px;'>
-    Auto detect uses your device location (GPS/browser geolocation).
-    </p>
-    """,
+        f"<p style='font-size:0.88rem;color:{colors['TEXT2']};margin-bottom:10px;'>"
+        f"Auto detect uses your device GPS/browser location.</p>",
         unsafe_allow_html=True,
     )
 
     if get_geolocation is None:
-        st.warning("Device geolocation dependency missing. Install streamlit-js-eval.")
+        st.warning("Install streamlit-js-eval for device geolocation.")
     else:
-        if st.button("Automatically Fetch Location", use_container_width=True, key="device_geo_btn"):
-            st.session_state.geolocation_device_requested = True
-            st.session_state.geolocation_error = ""
+        btn_col, _ = st.columns([1.2, 1])
+        with btn_col:
+            if st.button("Automatically Fetch Location", use_container_width=True, key="device_geo_btn"):
+                st.session_state.geolocation_device_requested = True
+                st.session_state.geolocation_error = ""
 
         if st.session_state.geolocation_device_requested:
             st.caption("Allow location permission in your browser prompt.")
@@ -348,19 +485,22 @@ def auto_fetch_location():
                 st.session_state.geolocation_error = error_text
 
         if st.session_state.geolocation_error:
-            st.warning(
-                f"Device location unavailable: {st.session_state.geolocation_error}. You can enter an area name manually below."
-            )
+            st.warning(f"Location unavailable: {st.session_state.geolocation_error}")
 
     st.markdown(
-        f"<p style='font-size:0.85rem;color:{colors['TEXT3']};margin-top:8px;'>Or enter a Lagos area name below.</p>",
+        f"<p style='font-size:0.8rem;color:{colors['TEXT3']};margin-top:8px;margin-bottom:4px;'>"
+        f"Or enter a Lagos area name below.</p>",
         unsafe_allow_html=True,
     )
-    geo_area = st.text_input(
-        "Lagos area",
-        placeholder="Ikeja, Lekki, VI, Surulere, Yaba...",
-        key="geo_area_input",
-    )
+
+    area_col, _ = st.columns([1.2, 1])
+    with area_col:
+        geo_area = st.text_input(
+            "Lagos area",
+            placeholder="Ikeja, Lekki, VI, Surulere...",
+            key="geo_area_input",
+            label_visibility="collapsed",
+        )
 
     if geo_area:
         area_key = geo_area.lower().strip()
@@ -370,14 +510,13 @@ def auto_fetch_location():
                 if area_key in area_name or area_name in area_key:
                     match = coordinates
                     break
-
         if match:
             st.session_state.geolocation_lat = float(match[0])
             st.session_state.geolocation_lon = float(match[1])
             st.session_state.geolocation_error = ""
         elif len(area_key) >= 3:
-            st.warning("Area not found. Try: Ikeja, Lekki, VI, Surulere, Yaba, Ikorodu, Apapa.")
-    
+            st.warning("Area not found. Try: Ikeja, Lekki, VI, Surulere, Yaba.")
+
     if (
         st.session_state.geolocation_lat is not None
         and st.session_state.geolocation_lon is not None
@@ -386,49 +525,58 @@ def auto_fetch_location():
         lon = st.session_state.geolocation_lon
         nearest_area = _nearest_area_name(lat, lon)
         location_name = f"{nearest_area} ({lat:.3f}°N, {lon:.3f}°E)"
-        
-        # Show prominent confirmation message
-        colors_local = get_theme(st.session_state.dark)
-        st.markdown(
-            f"<div style='background:{colors_local['SURFACE2']};border:2px solid {colors_local['ACCENT']};border-radius:10px;padding:12px 16px;margin-top:12px;'>"
-            f"<span style='color:{colors_local['ACCENT']};font-weight:700;font-size:0.95rem;'>Found</span> "
-            f"<span style='color:{colors_local['TEXT']};font-weight:600;'>{location_name}</span>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-        return lat, lon, location_name
-    
-    return None, None, None
 
+        found_col, _ = st.columns([1.2, 1])
+        with found_col:
+            st.markdown(
+                f"<div style='background:{colors['SURFACE2']};border:2px solid {colors['ACCENT']};"
+                f"border-radius:10px;padding:10px 14px;margin-top:10px;font-size:0.88rem;'>"
+                f"<span style='color:{colors['ACCENT']};font-weight:700;'>Found</span> "
+                f"<span style='color:{colors['TEXT']};font-weight:600;'>{location_name}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+        return lat, lon, location_name
+
+    return None, None, None
 
 def render_header(logo_path):
     colors = get_theme(st.session_state.dark)
-    top_left, top_right = st.columns([9, 1])
-    with top_left:
-        logo_col, title_col = st.columns([1, 11])
-        with logo_col:
-            if logo_path.exists():
-                st.image(str(logo_path), width=52)
-            else:
-                st.markdown("<div style='font-size:2rem;'>...</div>", unsafe_allow_html=True)
-        with title_col:
-            st.markdown(
-                f"""
-        <div style="padding-top:4px;">
-          <span style="font-size:1.7rem;font-weight:800;
-                       color:{colors['H_COLOR']};letter-spacing:-0.03em;">FloodIQ</span><br>
-          <span style="font-family:'DM Mono',monospace;font-size:0.72rem;
-                       color:{colors['ACCENT']};letter-spacing:0.1em;
-                       text-transform:uppercase;">Lagos Flood Risk Prediction</span>
+    if logo_path.exists():
+        logo_b64 = base64.b64encode(logo_path.read_bytes()).decode("ascii")
+        logo_markup = f'<div style="display:inline-flex;line-height:0;flex:0 0 52px;width:52px;height:52px;overflow:hidden;border-radius:12px;"><img src="data:image/png;base64,{logo_b64}" width="52" height="52" style="border-radius:12px;display:block;" /></div>'
+    else:
+        logo_markup = '<div style="font-size:2rem;flex:0 0 auto;">...</div>'
+
+    icon = "☀️" if st.session_state.dark else "🌙"
+    st.markdown(
+        f"""
+    <div class="floodiq-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:nowrap;min-width:0;">
+      <div class="floodiq-header-left" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;">
+        {logo_markup}
+                <div style="min-width:0;line-height:1;display:flex;flex-direction:column;gap:2px;user-select:none;cursor:default;">
+                    <span style="font-size:var(--floodiq-home-header-title-size, 1.7rem);font-weight:800;color:{colors['H_COLOR']};letter-spacing:-0.03em;line-height:1;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            FloodIQ
+          </span>
+                    <span style="font-family:'DM Mono',monospace;font-size:var(--floodiq-home-header-subtitle-size, 0.72rem);color:{colors['ACCENT']};letter-spacing:0.1em;text-transform:uppercase;display:block;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            Lagos Flood Risk Prediction
+          </span>
         </div>
-        """,
-                unsafe_allow_html=True,
+      </div>
+              <a href="?theme_toggle=1" target="_self"
+             style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+                width:34px;height:34px;border-radius:10px;border:1px solid {colors['BORDER']};
+                background:{colors['SURFACE2']};font-size:1rem;line-height:1;flex:0 0 auto;">
+            {icon}
+              </a>
+    </div>
+    """,
+            unsafe_allow_html=True,
             )
-    with top_right:
-        icon = "☀️" if st.session_state.dark else "🌙"
-        if st.button(icon, key="theme_btn", help="Toggle theme"):
-            st.session_state.dark = not st.session_state.dark
-            st.rerun()
+
+
+def render_floating_home_button():
+            return st.button("←", key="go_home_fab", help="Back to Home")
 
 
 def risk_banner(flood_days: int, total: int = 3):
@@ -498,7 +646,7 @@ def forecast_cards(predictions):
             status_label, status_color = "CRITICAL", colors["RED"]
         elif probability >= 0.4:
             status_label, status_color = "WATCH", colors["AMBER"]
-        elif row["tp"] > 5:
+        elif row["tp_mm"] > 20:
             status_label, status_color = "ADVISORY", colors["ACCENT2"]
         else:
             status_label, status_color = "NORMAL", colors["GREEN"]
@@ -550,9 +698,11 @@ def forecast_cards(predictions):
                           padding-top:10px;border-top:1px solid {border};
                           font-family:'DM Mono',monospace;font-size:0.72rem;
                           color:{text_sub};">
-                <span>🌧 {row['tp']:.1f}mm</span>
-                <span>🌡 {row['t2m']:.0f}°C</span>
-                <span>☁ {row['tcc']:.0f}%</span>
+                <span>🌧 {row['tp_mm']:.1f}mm</span>
+                <span>🌡 {row['temp_c']:.0f}°C</span>
+                <span>💧 {row['swvl1']:.2f} m³/m³</span>
+
+                
               </div>
             </div>
             """,

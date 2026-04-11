@@ -13,7 +13,6 @@ DEFAULT_THRESHOLD = 0.5
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_API_URL = "https://archive-api.open-meteo.com/v1/archive"
-FALLBACK_FORECAST_API_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
 
 LAGOS_AREAS = {
     "ikeja": (6.601, 3.351),
@@ -54,15 +53,14 @@ TOPO_DATA = {
 
 GRID_CELLS = list(TOPO_DATA.keys())
 FEATURE_COLS = [
-    "tp",
-    "u10",
-    "v10",
-    "d2m",
-    "t2m",
-    "msl",
-    "tcc",
-    "mxtpr",
+    "swvl1",
+    "tp_mm",
+    "runoff_mm",
+    "temp_c",
     "elevation",
     "slope",
     "flow_accum",
+    "month",
+    "rolling_3day_feat",
+    "rolling_5day_feat",
 ]

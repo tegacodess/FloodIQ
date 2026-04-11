@@ -8,7 +8,6 @@ import requests
 
 from .config import (
     ARCHIVE_API_URL,
-    FALLBACK_FORECAST_API_URL,
     FORECAST_API_URL,
     FORECAST_DAYS,
 )
@@ -34,46 +33,42 @@ def _build_open_meteo_frame(data: dict):
     daily = data["daily"]
     hourly = data["hourly"]
 
-    hourly_frame = pd.DataFrame(
-        {
-            "time": pd.to_datetime(hourly["time"]),
-            "d2m_k": hourly["dewpoint_2m"],
-            "msl": hourly["surface_pressure"],
-            "precip_hr": hourly["precipitation"],
-        }
-    )
+    hourly_frame = pd.DataFrame({
+        "time": pd.to_datetime(hourly["time"]),
+        "soil_moisture": hourly["soil_moisture_0_to_7cm"],
+        "runoff_hr": hourly["runoff"],
+    })
     hourly_frame["date"] = hourly_frame["time"].dt.date
     aggregated = hourly_frame.groupby("date").agg(
-        d2m_k=("d2m_k", "mean"),
-        msl=("msl", "mean"),
-        mxtpr=("precip_hr", "max"),
+        swvl1=("soil_moisture", "mean"),
+        runoff_mm=("runoff_hr", "sum"),
     ).reset_index()
+
+    aggregated = hourly_frame.groupby("date").agg(
+    swvl1=("soil_moisture", "mean"),
+    runoff_mm=("runoff_hr", "sum"),
+    ).reset_index()
+
+    # fill any missing soil moisture with Lagos wet season climatological mean
+    aggregated["swvl1"] = aggregated["swvl1"].fillna(0.25)
+    aggregated["runoff_mm"] = aggregated["runoff_mm"].fillna(0.0)
+
+    
 
     records = []
     for index, date_string in enumerate(daily["time"]):
         date_value = pd.to_datetime(date_string).date()
         day_rows = aggregated[aggregated["date"] == date_value]
-        d2m = float(day_rows["d2m_k"].values[0]) if len(day_rows) else 24.0
-        msl = float(day_rows["msl"].values[0]) if len(day_rows) else 1013.25
-        mxtpr = float(day_rows["mxtpr"].values[0]) if len(day_rows) else 0.0
+        swvl1 = float(day_rows["swvl1"].values[0]) if len(day_rows) else 0.2
+        runoff_mm = float(day_rows["runoff_mm"].values[0]) if len(day_rows) else 0.0
 
-        wind_speed = daily["windspeed_10m_max"][index] or 0.0
-        wind_direction = daily["winddirection_10m_dominant"][index] or 0.0
-        wind_direction_rad = np.radians(wind_direction)
-
-        records.append(
-            {
-                "date": date_string,
-                "tp": daily["precipitation_sum"][index] or 0.0,
-                "u10": -wind_speed * np.sin(wind_direction_rad),
-                "v10": -wind_speed * np.cos(wind_direction_rad),
-                "d2m": d2m,
-                "t2m": daily["temperature_2m_mean"][index] or 25.0,
-                "msl": msl,
-                "tcc": daily["cloudcover_mean"][index] or 0.0,
-                "mxtpr": mxtpr,
-            }
-        )
+        records.append({
+            "date": date_string,
+            "tp_mm": daily["precipitation_sum"][index] or 0.0,
+            "temp_c": daily["temperature_2m_mean"][index] or 25.0,
+            "swvl1": swvl1,
+            "runoff_mm": runoff_mm,
+        })
 
     return pd.DataFrame(records)
 
@@ -82,30 +77,31 @@ def _fetch_open_meteo_window(api_url: str, lat: float, lon: float, days: int, st
     start_day = _normalize_start_date(start_date)
     end_day = start_day + timedelta(days=days - 1)
 
+    is_archive = "archive" in api_url
+
     params = {
         "latitude": lat,
         "longitude": lon,
         "daily": [
             "precipitation_sum",
-            "windspeed_10m_max",
-            "winddirection_10m_dominant",
-            "dewpoint_2m_mean",
             "temperature_2m_mean",
-            "surface_pressure_mean",
-            "cloudcover_mean",
-            "precipitation_hours",
         ],
-        "hourly": ["dewpoint_2m", "surface_pressure", "precipitation"],
+        "hourly": [
+            "soil_moisture_0_to_7cm",
+            "runoff",
+        ],
         "timezone": "Africa/Lagos",
         "start_date": start_day.strftime("%Y-%m-%d"),
         "end_date": end_day.strftime("%Y-%m-%d"),
-        "wind_speed_unit": "ms",
     }
+
+    # ERA5-Land provides soil moisture and runoff, for forecast endpoint, use the best available model that includes these variables
+    if not is_archive:
+        params["models"] = "era5_seamless"
 
     response = requests.get(api_url, params=params, timeout=12)
     response.raise_for_status()
     return _build_open_meteo_frame(response.json())
-
 
 def _fetch_archive_climatology(lat: float, lon: float, days: int, start_date=None, years: int = 5):
     start_day = _normalize_start_date(start_date)
@@ -131,19 +127,13 @@ def _fetch_archive_climatology(lat: float, lon: float, days: int, start_date=Non
 
         sample_frame = pd.DataFrame(samples)
         target_date = start_day + timedelta(days=offset)
-        records.append(
-            {
-                "date": target_date.strftime("%Y-%m-%d"),
-                "tp": float(sample_frame["tp"].mean()),
-                "u10": float(sample_frame["u10"].mean()),
-                "v10": float(sample_frame["v10"].mean()),
-                "d2m": float(sample_frame["d2m"].mean()),
-                "t2m": float(sample_frame["t2m"].mean()),
-                "msl": float(sample_frame["msl"].mean()),
-                "tcc": float(sample_frame["tcc"].mean()),
-                "mxtpr": float(sample_frame["mxtpr"].mean()),
-            }
-        )
+        records.append({
+            "date": target_date.strftime("%Y-%m-%d"),
+            "tp_mm": float(sample_frame["tp_mm"].mean()),
+            "temp_c": float(sample_frame["temp_c"].mean()),
+            "swvl1": float(sample_frame["swvl1"].mean()),
+            "runoff_mm": float(sample_frame["runoff_mm"].mean()),
+        })
 
     if not records:
         raise ValueError("Climatology fallback did not produce daily forecast rows")
@@ -151,70 +141,7 @@ def _fetch_archive_climatology(lat: float, lon: float, days: int, start_date=Non
     return pd.DataFrame(records)
 
 
-def _fetch_met_no(lat: float, lon: float, days: int, start_date=None):
-    start_day = _normalize_start_date(start_date)
-
-    headers = {
-        "User-Agent": "FloodIQ/1.0 (contact: tegazion7@gmail.com)",
-    }
-    response = requests.get(
-        FALLBACK_FORECAST_API_URL,
-        params={"lat": lat, "lon": lon},
-        headers=headers,
-        timeout=12,
-    )
-    response.raise_for_status()
-    payload = response.json()
-
-    timeseries = payload.get("properties", {}).get("timeseries", [])
-    if not timeseries:
-        raise ValueError("Fallback API returned no timeseries data")
-
-    rows = []
-    for point in timeseries:
-        details = point.get("data", {}).get("instant", {}).get("details", {})
-        next_1h = point.get("data", {}).get("next_1_hours", {}).get("details", {})
-        timestamp = pd.to_datetime(point.get("time"), utc=True).tz_convert("Africa/Lagos")
-        rows.append(
-            {
-                "time": timestamp,
-                "tp_hour": float(next_1h.get("precipitation_amount", 0.0) or 0.0),
-                "u10": float(details.get("x_wind", 0.0) or 0.0),
-                "v10": float(details.get("y_wind", 0.0) or 0.0),
-                "d2m": float(details.get("dew_point_temperature", 24.0) or 24.0),
-                "t2m": float(details.get("air_temperature", 25.0) or 25.0),
-                "msl": float(details.get("air_pressure_at_sea_level", 1013.25) or 1013.25),
-                "tcc": float(details.get("cloud_area_fraction", 0.0) or 0.0),
-            }
-        )
-
-    frame = pd.DataFrame(rows)
-    frame["date"] = frame["time"].dt.date
-    daily = (
-        frame.groupby("date")
-        .agg(
-            tp=("tp_hour", "sum"),
-            u10=("u10", "mean"),
-            v10=("v10", "mean"),
-            d2m=("d2m", "mean"),
-            t2m=("t2m", "mean"),
-            msl=("msl", "mean"),
-            tcc=("tcc", "mean"),
-            mxtpr=("tp_hour", "max"),
-        )
-        .reset_index()
-    )
-
-    daily = daily[daily["date"] >= start_day]
-    daily = daily.head(days)
-    if daily.empty:
-        raise ValueError("Fallback API did not produce daily forecast rows")
-
-    daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%Y-%m-%d")
-    return daily[["date", "tp", "u10", "v10", "d2m", "t2m", "msl", "tcc", "mxtpr"]]
-
-
-def fetch_weather(lat: float, lon: float, days: int = FORECAST_DAYS, start_date=None):
+def fetch_weather(lat, lon, days=FORECAST_DAYS, start_date=None):
     start_day = _normalize_start_date(start_date)
     today = date.today()
     forecast_horizon = today + timedelta(days=16)
@@ -222,30 +149,47 @@ def fetch_weather(lat: float, lon: float, days: int = FORECAST_DAYS, start_date=
     try:
         if start_day < today:
             return _fetch_open_meteo_window(ARCHIVE_API_URL, lat, lon, days, start_date=start_day), None, "archive"
-
         if start_day <= forecast_horizon:
             return _fetch_open_meteo_window(FORECAST_API_URL, lat, lon, days, start_date=start_day), None, "forecast"
-
         return _fetch_archive_climatology(lat, lon, days, start_day), None, "climatology"
+
     except Exception as primary_error:
+        # Fallback: try climatology from archive regardless of date
         try:
-            fallback_df = _fetch_met_no(lat, lon, days, start_date=start_date)
-            return fallback_df, None, "fallback"
+            return _fetch_archive_climatology(lat, lon, days, start_day), None, "climatology"
         except Exception as fallback_error:
-            return None, f"Open-Meteo failed: {primary_error}; fallback failed: {fallback_error}", None
+            return None, f"Weather fetch failed: {primary_error}; climatology fallback failed: {fallback_error}", None
 
 
-def build_context(predictions: pd.DataFrame, location_name: str, lat: float, lon: float, grid_cell):
+def build_context(
+    predictions: pd.DataFrame,
+    location_name: str,
+    lat: float,
+    lon: float,
+    grid_cell,
+    weather_mode: str = "forecast",
+):
+    mode_descriptions = {
+        "archive": "Historical analysis from archived weather data (selected date is in the past)",
+        "forecast": "Forward-looking forecast from Open-Meteo",
+        "climatology": "Climatology estimate built from historical archive samples",
+    }
+    mode_label = mode_descriptions.get(weather_mode, "Unknown weather data source")
+    window_start = str(predictions["date"].min()) if not predictions.empty else "N/A"
+    window_end = str(predictions["date"].max()) if not predictions.empty else "N/A"
+
     lines = [
         f"Location: {location_name} (Lat {lat:.4f}, Lon {lon:.4f})",
         f"Nearest ERA5 grid cell: {grid_cell}",
-        f"Prediction date: {datetime.now().strftime('%Y-%m-%d')}",
+        f"Analysis generated on: {datetime.now().strftime('%Y-%m-%d')}",
+        f"Weather source mode: {mode_label}",
+        f"3-day analysis window: {window_start} to {window_end}",
         "",
-        "3-Day Flood Risk Forecast:",
+        "3-Day Flood Risk Output:",
     ]
     for _, row in predictions.iterrows():
         lines.append(
-            f"  • {row['date']}: {row['risk_level']} RISK (probability {row['flood_prob'] * 100:.1f}%, rainfall {row['tp']:.1f}mm)"
+            f"  • {row['date']}: {row['risk_level']} RISK (probability {row['flood_prob']*100:.1f}%, rainfall {row['tp_mm']:.1f}mm)"
         )
     return "\n".join(lines)
 
@@ -261,6 +205,8 @@ Guidelines:
 - Be concise, clear and practical
 - Give actionable advice specific to Lagos
 - Reference the prediction data when relevant
+- If weather source mode says archived/historical, explicitly say this is a retrospective analysis, not a future forecast
+- If weather source mode says climatology, explicitly say this is an estimate based on historical patterns
 - Prioritise safety
 - Keep responses under 200 words"""
 
