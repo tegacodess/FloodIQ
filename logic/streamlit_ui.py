@@ -246,7 +246,7 @@ def inject_styles(dark: bool):
     font-family: 'Syne', sans-serif;
   }}
 
-  /* --- Inputs --- */
+  /* Inputs  */
   .stTextInput > div > div > input,
   .stNumberInput > div > div > input,
   .stDateInput > div > div > input,
@@ -281,7 +281,7 @@ def inject_styles(dark: bool):
       box-shadow: none !important;
   }}
 
-  /* --- CALENDAR POPUP FIX --- */
+  /*  CALENDAR POPUP   */
   /* This ensures the actual floating calendar background is dynamic */
   div[data-baseweb="popover"] {{
       background-color: transparent !important;
@@ -294,7 +294,7 @@ def inject_styles(dark: bool):
       border-radius: 12px !important;
   }}
 
-  /* Fixes the header area of the calendar popover */
+  /*  the calendar popover */
   div[data-baseweb="calendar"] > div {{
       background-color: {popup_bg} !important;
   }}
@@ -361,7 +361,7 @@ def inject_styles(dark: bool):
       color: #ffffff !important;
   }}
 
-  /* --- Rest of Styles --- */
+  /*  Rest of Styles  */
   .stButton > button {{
     font-family: 'Syne', sans-serif !important;
     font-weight: 700 !important;
@@ -576,7 +576,31 @@ def render_header(logo_path):
 
 
 def render_floating_home_button():
-            return st.button("←", key="go_home_fab", help="Back to Home")
+    colors = get_theme(st.session_state.dark)
+    st.markdown(
+        f"""
+    <style>
+      .floodiq-home-btn:hover {{
+        background: {colors['ACCENT']} !important;
+        color: #ffffff !important;
+        border-color: {colors['ACCENT']} !important;
+      }}
+    </style>
+    <a href="?go_home=1" target="_self" title="Back to Home"
+       class="floodiq-home-btn"
+       style="position:fixed;right:16px;bottom:60px;z-index:999;
+              width:38px;height:38px;border-radius:999px;
+              display:inline-flex;align-items:center;justify-content:center;
+              text-decoration:none;font-size:1rem;font-weight:700;
+              color:{colors['TEXT']};background:{colors['SURFACE2']};
+              border:1.5px solid {colors['BORDER']};
+              box-shadow:0 6px 18px {colors['BORDER']}66;
+              transition: all 0.2s ease;">
+      ←
+    </a>
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def risk_banner(flood_days: int, total: int = 3):
