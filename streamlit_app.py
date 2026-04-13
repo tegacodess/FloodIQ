@@ -63,7 +63,17 @@ def _reset_to_home_state():
     st.session_state.location_name = ""
     st.session_state.selected_lat = None
     st.session_state.selected_lon = None
-    st.session_state.home_started = False
+    st.session_state.home_started = False  
+
+def _reset_to_input_state():
+    st.session_state.predictions = None
+    st.session_state.chat_history = []
+    st.session_state.pred_context = ""
+    st.session_state.location_name = ""
+    st.session_state.selected_lat = None
+    st.session_state.selected_lon = None
+    st.session_state.home_started = True  
+
 
 
 def _render_home_intro():
@@ -213,7 +223,7 @@ today = date.today()
 if "forecast_start_date" not in st.session_state:
     st.session_state.forecast_start_date = today
 
-# ── PAGE 2: INPUT FORM ────────────────────────────────────────────────────
+# PAGE 2: INPUT FORM 
 if st.session_state.predictions is None:
     form_col, _ = st.columns([3.2, 1])
 
@@ -309,7 +319,7 @@ else:
     location_name = st.session_state.location_name
     predict_btn = False
 
-# ── PREDICTION TRIGGER ────────────────────────────────────────────────────
+# PREDICTION TRIGGER 
 if predict_btn and lat is not None:
     dot_color = "#29D4B0" if st.session_state.dark else "#0A8F7A"
 
@@ -360,7 +370,7 @@ if predict_btn and lat is not None:
         st.session_state.chat_history = []
         st.rerun()
 
-# ── PAGE 3: RESULTS ───────────────────────────────────────────────────────
+# PAGE 3: RESULTS 
 if st.session_state.predictions is not None:
     predictions = st.session_state.predictions
     if "followup_input" not in st.session_state:
@@ -494,5 +504,5 @@ if st.session_state.predictions is not None:
     _, reset_col, _ = st.columns([1, 1, 1])
     with reset_col:
         if st.button("New Prediction", use_container_width=True):
-            _reset_to_home_state()
+            _reset_to_input_state()
             st.rerun()
